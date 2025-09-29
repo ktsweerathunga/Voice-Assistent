@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:voice_assistent/color_palete.dart';
 import 'package:voice_assistent/home_screen.dart';
 
 void main() => runApp(const MyApp());
@@ -11,7 +12,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Material App',
-      theme: ThemeData.light(),
+      theme: ThemeData.light(useMaterial3: true).copyWith(
+        scaffoldBackgroundColor: ColorPalette.whiteColor,
+        appBarTheme: AppBarTheme(
+          backgroundColor: ColorPalette.whiteColor,
+        )
+        ),
       home: HomeScreen()
     );
   }
