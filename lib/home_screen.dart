@@ -478,3 +478,304 @@ class _HomeScreenState extends State<HomeScreen>
       ],
     );
   }
+
+  Widget _buildChatSection() {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(16),
+            itemCount: _messages.length + (_isTyping ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == _messages.length && _isTyping) {
+                return _buildTypingIndicator();
+              }
+              final message = _messages[index];
+              return _buildMessageBubble(
+                message['text'],
+                message['isUser'],
+                message['timestamp'],
+              );
+            },
+          ),
+        ),
+        _buildQuickReplies(),
+      ],
+    );
+  }
+
+  Widget _buildMessageBubble(String message, bool isUser, DateTime timestamp) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isUser) _buildAvatar(false),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Column(
+              crossAxisAlignment:
+                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: isUser
+                        ? LinearGradient(
+                            colors: [
+                              ColorPalette.mainFontColor,
+                              ColorPalette.mainFontColor.withOpacity(0.8),
+                            ],
+                          )
+                        : LinearGradient(
+                            colors: _isDarkMode
+                                ? [const Color(0xFF3A3A3A), const Color(0xFF4A4A4A)]
+                                : [ColorPalette.firstSuggestionBoxColor, ColorPalette.firstSuggestionBoxColor.withOpacity(0.7)],
+                          ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    message,
+                    style: TextStyle(
+                      color: isUser
+                          ? ColorPalette.whiteColor
+                          : (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor),
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor).withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (isUser) _buildAvatar(true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar(bool isUser) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: isUser 
+            ? ColorPalette.mainFontColor 
+            : (_isDarkMode ? const Color(0xFF3A3A3A) : ColorPalette.assistentCircleColor),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Icon(
+        isUser ? Icons.person : Icons.smart_toy,
+        color: isUser 
+            ? ColorPalette.whiteColor 
+            : (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor),
+        size: 20,
+      ),
+    );
+  }
+
+  Widget _buildTypingIndicator() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          _buildAvatar(false),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _isDarkMode ? const Color(0xFF3A3A3A) : ColorPalette.firstSuggestionBoxColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildDot(0),
+                const SizedBox(width: 4),
+                _buildDot(1),
+                const SizedBox(width: 4),
+                _buildDot(2),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDot(int index) {
+    return AnimatedBuilder(
+      animation: _typingController,
+      builder: (context, child) {
+        double offset = (index * 0.2) % 1.0;
+        double animValue = (_typingController.value + offset) % 1.0;
+        return Transform.translate(
+          offset: Offset(0, -10 * (1 - (2 * animValue - 1).abs())),
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: _isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildQuickReplies() {
+    if (_messages.isEmpty) return const SizedBox.shrink();
+    
+    final quickReplies = ['Thanks!', 'Tell me more', 'That is helpful', 'What else?'];
+    
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: quickReplies.length,
+        itemBuilder: (context, index) {
+          return Container(
+            margin: const EdgeInsets.only(right: 8),
+            child: Material(
+              color: _isDarkMode ? const Color(0xFF3A3A3A) : ColorPalette.secondSuggestionBoxColor.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(25),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(25),
+                onTap: () => _sendMessage(quickReplies[index]),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Text(
+                    quickReplies[index],
+                    style: TextStyle(
+                      color: _isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildInputSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _isDarkMode ? const Color(0xFF2A2A2A) : ColorPalette.whiteColor,
+        border: Border(
+          top: BorderSide(
+            color: (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.borderColor).withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: _isDarkMode 
+                    ? const Color(0xFF3A3A3A) 
+                    : ColorPalette.firstSuggestionBoxColor.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(
+                  color: (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.borderColor).withOpacity(0.3),
+                ),
+              ),
+              child: TextField(
+                controller: _textController,
+                style: TextStyle(
+                  color: _isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Type your message...',
+                  hintStyle: TextStyle(
+                    color: (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor).withOpacity(0.5),
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                onSubmitted: _sendMessage,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          _buildActionButton(
+            onTap: _toggleListening,
+            gradient: _isListening
+                ? [ColorPalette.thirdSuggestionBoxColor, ColorPalette.secondSuggestionBoxColor]
+                : [ColorPalette.mainFontColor, ColorPalette.mainFontColor.withOpacity(0.8)],
+            icon: _isListening ? Icons.mic : Icons.mic_none,
+          ),
+          const SizedBox(width: 8),
+          _buildActionButton(
+            onTap: () => _sendMessage(_textController.text),
+            gradient: [ColorPalette.mainFontColor, ColorPalette.mainFontColor.withOpacity(0.8)],
+            icon: Icons.send,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required VoidCallback onTap,
+    required List<Color> gradient,
+    required IconData icon,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: gradient),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.first.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          icon,
+          color: ColorPalette.whiteColor,
+          size: 24,
+        ),
+      ),
+    );
+  }
+}
