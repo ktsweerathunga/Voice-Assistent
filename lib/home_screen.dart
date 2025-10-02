@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistent/color_palete.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -9,7 +11,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with TickerProviderStateMixin {
+  with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late AnimationController _listeningController;
   late AnimationController _typingController;
@@ -24,10 +26,44 @@ class _HomeScreenState extends State<HomeScreen>
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  final speechToText = SpeechToText();
+
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
+    initSpeechToText();
+  }
+
+  Future<void> initSpeechToText() async {
+    // Initialize speech-to-text functionality here if needed
+     await speechToText.initialize();
+     setState(() {
+       
+     });
+  }
+
+  /// Each time to start a speech recognition session
+  void _startListening() async {
+    await speechToText.listen(onResult: _onSpeechResult);
+    setState(() {});
+  }
+
+  /// Manually stop the active speech recognition session
+  /// Note that there are also timeouts that each platform enforces
+  /// and the SpeechToText plugin supports setting timeouts on the
+  /// listen method.
+  void _stopListening() async {
+    await speechToText.stop();
+    setState(() {});
+  }
+
+  /// This is the callback that the SpeechToText plugin calls when
+  /// the platform returns recognized words.
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    setState(() {
+      _lastWords = result.recognizedWords;
+    });
   }
 
   void _initializeAnimations() {

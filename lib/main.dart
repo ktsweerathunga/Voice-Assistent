@@ -5,7 +5,7 @@ import 'package:voice_assistent/home_screen.dart';
 void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key}); 
 
   @override
   Widget build(BuildContext context) {
@@ -16,9 +16,9 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: ColorPalette.whiteColor,
         appBarTheme: AppBarTheme(
           backgroundColor: ColorPalette.whiteColor,
-        )
         ),
-      home: HomeScreen()
+      ),
+      home: const HomeScreen(),
     );
   }
 }
