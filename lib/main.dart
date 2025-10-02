@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:voice_assistent/color_palete.dart';
 import 'package:voice_assistent/home_screen.dart';
+import 'package:voice_assistent/widgets/openAi_service.dart';
+import 'package:voice_assistent/config/api_config.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  // Initialize OpenAI service with API key
+  OpenaiService.initialize(ApiConfig.openaiApiKey);
+  
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key}); 
