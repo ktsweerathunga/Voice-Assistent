@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistent/color_palete.dart';
+import 'package:voice_assistent/widgets/round_icon_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,7 +47,10 @@ class _HomeScreenState extends State<HomeScreen>
   /// Each time to start a speech recognition session
   Future <void> _startListening() async {
     await speechToText.listen(onResult: _onSpeechResult);
-    setState(() {});
+    setState(() {
+      _isListening = true;
+    });
+    _listeningController.forward();
   }
 
   /// Manually stop the active speech recognition session
@@ -55,14 +59,30 @@ class _HomeScreenState extends State<HomeScreen>
   /// listen method.
   Future <void> _stopListening() async {
     await speechToText.stop();
-    setState(() {});
+    setState(() {
+      _isListening = false;
+    });
+    _listeningController.reverse();
+  }
+
+  /// Toggle listening functionality with conditions
+  void _toggleListening() async {
+    if (!speechToText.isListening) {
+      // Start listening
+      _startListening();
+    } else {
+      // Stop listening
+      _stopListening();
+    }
   }
 
   /// This is the callback that the SpeechToText plugin calls when
   /// the platform returns recognized words.
   void _onSpeechResult(SpeechRecognitionResult result) {
     setState(() {
-      var lastWords = result.recognizedWords;
+      // Store the recognized words (can be used later for processing)
+      // final lastWords = result.recognizedWords;
+      // TODO: Process the recognized words as needed
     });
   }
   
@@ -120,16 +140,6 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   // TODO: Add functionality methods here when implementing features
-
-  void _toggleListening() async {
-    if (!speechToText.isListening) {
-      // Start listening
-      _startListening();
-    } else {
-      // Stop listening
-      _stopListening();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -705,17 +715,15 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const SizedBox(width: 12),
-          _buildRoundIconButton(
-            onTap: () {
-              // TODO: Implement voice listening functionality
-            },
+          RoundIconButton(
+            onTap: _toggleListening,
             gradient: _isListening
                 ? [ColorPalette.thirdSuggestionBoxColor, ColorPalette.secondSuggestionBoxColor]
                 : [ColorPalette.mainFontColor, ColorPalette.mainFontColor.withOpacity(0.8)],
             icon: _isListening ? Icons.mic : Icons.mic_none,
           ),
           const SizedBox(width: 8),
-          _buildRoundIconButton(
+          RoundIconButton(
             onTap: () {
               // TODO: Implement send message functionality
             },
@@ -725,34 +733,5 @@ class _HomeScreenState extends State<HomeScreen>
         ],
       ),
     );
-  }
-
-  Widget _buildRoundIconButton({
-    required VoidCallback onTap,
-    required List<Color> gradient,
-    required IconData icon,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: gradient),
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.first.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(
-          icon,
-          color: ColorPalette.whiteColor,
-          size: 24,
-        ),
-      ),
-    );
-  }
+}
 }
