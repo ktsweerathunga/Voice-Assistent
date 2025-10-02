@@ -68,8 +68,14 @@ class _HomeScreenState extends State<HomeScreen>
   /// Toggle listening functionality with conditions
   void _toggleListening() async {
     if (!speechToText.isListening) {
-      // Start listening
-      _startListening();
+      // Check if speech-to-text is available before starting
+      if (speechToText.isAvailable) {
+        // Start listening
+        _startListening();
+      } else {
+        // Request permission/reinitialize if not available
+        await initSpeechToText();
+      }
     } else {
       // Stop listening
       _stopListening();
