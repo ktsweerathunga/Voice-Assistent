@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isListening = false;
   bool _isDarkMode = false;
   bool _isTyping = false;
-  List<Map<String, dynamic>> _messages = [];
+  final List<Map<String, dynamic>> _messages = [];
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -44,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   /// Each time to start a speech recognition session
-  void _startListening() async {
+  Future <void> _startListening() async {
     await speechToText.listen(onResult: _onSpeechResult);
     setState(() {});
   }
@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen>
   /// Note that there are also timeouts that each platform enforces
   /// and the SpeechToText plugin supports setting timeouts on the
   /// listen method.
-  void _stopListening() async {
+  Future <void> _stopListening() async {
     await speechToText.stop();
     setState(() {});
   }
@@ -119,108 +119,41 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  void _toggleListening() {
-    setState(() {
-      _isListening = !_isListening;
-    });
-    
-    if (_isListening) {
-      _listeningController.forward();
+  // TODO: Add functionality methods here when implementing features
+
+  void _toggleListening() async {
+    if (!speechToText.isListening) {
+      // Start listening
+      _startListening();
     } else {
-      _listeningController.reverse();
+      // Stop listening
+      _stopListening();
     }
-  }
-
-  void _toggleTheme() {
-    setState(() {
-      _isDarkMode = !_isDarkMode;
-    });
-  }
-
-  void _sendMessage(String message) {
-    if (message.trim().isEmpty) return;
-    
-    setState(() {
-      _messages.add({
-        'text': message,
-        'isUser': true,
-        'timestamp': DateTime.now(),
-      });
-      _isTyping = true;
-    });
-    
-    _textController.clear();
-    _scrollToBottom();
-    
-    // Simulate AI thinking and response
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      setState(() {
-        _isTyping = false;
-        _messages.add({
-          'text': _generateAIResponse(message),
-          'isUser': false,
-          'timestamp': DateTime.now(),
-        });
-      });
-      _scrollToBottom();
-    });
-  }
-
-  String _generateAIResponse(String userMessage) {
-    final responses = {
-      'weather': 'The weather today is sunny with a temperature of 24°C. Perfect for outdoor activities! ☀️',
-      'reminder': 'I have set a reminder for tomorrow. I will make sure to notify you at the right time! ⏰',
-      'joke': 'Why do not scientists trust atoms? Because they make up everything! 😄',
-      'music': 'Playing your favorite playlist now. Enjoy the music! 🎵',
-      'news': 'Here are today top headlines: Technology stocks are rising, and there is exciting news in AI development! 📰',
-      'help': 'I can help you with weather, reminders, jokes, music, news, and much more! What would you like to know?',
-    };
-    
-    String lowerMessage = userMessage.toLowerCase();
-    for (String key in responses.keys) {
-      if (lowerMessage.contains(key)) {
-        return responses[key]!;
-      }
-    }
-    
-    return 'That is interesting! I am still learning, but I would love to help you with that. Could you tell me more about what you need? 🤖';
-  }
-
-  void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _isDarkMode ? const Color(0xFF1A1A1A) : ColorPalette.whiteColor,
-      appBar: _buildAppBar(),
+      appBar: _buildTopAppBar(),
       body: Column(
         children: [
           // AI Avatar Section
-          _buildAvatarSection(),
+          _buildAnimatedAvatarSection(),
           
           // Quick Actions or Chat Messages
           Expanded(
-            child: _messages.isEmpty ? _buildQuickActions() : _buildChatSection(),
+            child: _messages.isEmpty ? _buildQuickActionCardsGrid() : _buildChatMessagesSection(),
           ),
           
           // Input Section
-          _buildInputSection(),
+          _buildBottomInputBar(),
         ],
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildTopAppBar() {
     return AppBar(
       backgroundColor: _isDarkMode ? const Color(0xFF2A2A2A) : ColorPalette.whiteColor,
       elevation: 0,
@@ -238,7 +171,9 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       actions: [
         IconButton(
-          onPressed: _toggleTheme,
+          onPressed: () {
+            // TODO: Implement theme toggle functionality
+          },
           icon: Icon(
             _isDarkMode ? Icons.light_mode : Icons.dark_mode,
             color: _isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor,
@@ -246,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         IconButton(
           onPressed: () {
-            // Settings action
+            // TODO: Implement settings functionality
           },
           icon: Icon(
             Icons.settings,
@@ -258,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildAvatarSection() {
+  Widget _buildAnimatedAvatarSection() {
     return Container(
       height: 200,
       width: double.infinity,
@@ -333,7 +268,7 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                         ),
                         // Wave animation when listening
-                        if (_isListening) _buildWaveAnimation(),
+                        if (_isListening) _buildListeningWaveAnimation(),
                       ],
                     ),
                   );
@@ -346,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildWaveAnimation() {
+  Widget _buildListeningWaveAnimation() {
     return AnimatedBuilder(
       animation: _waveAnimation,
       builder: (context, child) {
@@ -367,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActionCardsGrid() {
     final actions = [
       {
         'title': 'Ask about Weather',
@@ -465,47 +400,43 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
                 child: Material(
                   color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () => _sendMessage(action['message'] as String),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: ColorPalette.whiteColor.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              action['icon'] as IconData,
-                              color: ColorPalette.mainFontColor,
-                              size: 28,
-                            ),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: ColorPalette.whiteColor.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            action['title'] as String,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: _isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor,
-                            ),
-                            textAlign: TextAlign.center,
+                          child: Icon(
+                            action['icon'] as IconData,
+                            color: ColorPalette.mainFontColor,
+                            size: 28,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            action['subtitle'] as String,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor).withOpacity(0.7),
-                            ),
-                            textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          action['title'] as String,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: _isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor,
                           ),
-                        ],
-                      ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          action['subtitle'] as String,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor).withOpacity(0.7),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -517,7 +448,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildChatSection() {
+  Widget _buildChatMessagesSection() {
     return Column(
       children: [
         Expanded(
@@ -527,10 +458,10 @@ class _HomeScreenState extends State<HomeScreen>
             itemCount: _messages.length + (_isTyping ? 1 : 0),
             itemBuilder: (context, index) {
               if (index == _messages.length && _isTyping) {
-                return _buildTypingIndicator();
+                return _buildAiTypingIndicator();
               }
               final message = _messages[index];
-              return _buildMessageBubble(
+              return _buildChatMessageBubble(
                 message['text'],
                 message['isUser'],
                 message['timestamp'],
@@ -538,12 +469,12 @@ class _HomeScreenState extends State<HomeScreen>
             },
           ),
         ),
-        _buildQuickReplies(),
+        _buildQuickReplyButtons(),
       ],
     );
   }
 
-  Widget _buildMessageBubble(String message, bool isUser, DateTime timestamp) {
+  Widget _buildChatMessageBubble(String message, bool isUser, DateTime timestamp) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -551,7 +482,7 @@ class _HomeScreenState extends State<HomeScreen>
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isUser) _buildAvatar(false),
+          if (!isUser) _buildUserOrAiAvatar(false),
           const SizedBox(width: 8),
           Flexible(
             child: Column(
@@ -604,13 +535,13 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const SizedBox(width: 8),
-          if (isUser) _buildAvatar(true),
+          if (isUser) _buildUserOrAiAvatar(true),
         ],
       ),
     );
   }
 
-  Widget _buildAvatar(bool isUser) {
+  Widget _buildUserOrAiAvatar(bool isUser) {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -629,12 +560,12 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildTypingIndicator() {
+  Widget _buildAiTypingIndicator() {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          _buildAvatar(false),
+          _buildUserOrAiAvatar(false),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.all(16),
@@ -645,11 +576,11 @@ class _HomeScreenState extends State<HomeScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildDot(0),
+                _buildTypingAnimationDot(0),
                 const SizedBox(width: 4),
-                _buildDot(1),
+                _buildTypingAnimationDot(1),
                 const SizedBox(width: 4),
-                _buildDot(2),
+                _buildTypingAnimationDot(2),
               ],
             ),
           ),
@@ -658,7 +589,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildDot(int index) {
+  Widget _buildTypingAnimationDot(int index) {
     return AnimatedBuilder(
       animation: _typingController,
       builder: (context, child) {
@@ -679,7 +610,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildQuickReplies() {
+  Widget _buildQuickReplyButtons() {
     if (_messages.isEmpty) return const SizedBox.shrink();
     
     final quickReplies = ['Thanks!', 'Tell me more', 'That is helpful', 'What else?'];
@@ -698,7 +629,9 @@ class _HomeScreenState extends State<HomeScreen>
               borderRadius: BorderRadius.circular(25),
               child: InkWell(
                 borderRadius: BorderRadius.circular(25),
-                onTap: () => _sendMessage(quickReplies[index]),
+                onTap: () {
+                  // TODO: Implement quick reply functionality
+                },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Text(
@@ -717,7 +650,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildInputSection() {
+  Widget _buildBottomInputBar() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -765,21 +698,27 @@ class _HomeScreenState extends State<HomeScreen>
                     vertical: 12,
                   ),
                 ),
-                onSubmitted: _sendMessage,
+                onSubmitted: (value) {
+                  // TODO: Implement message submission functionality
+                },
               ),
             ),
           ),
           const SizedBox(width: 12),
-          _buildActionButton(
-            onTap: _toggleListening,
+          _buildRoundIconButton(
+            onTap: () {
+              // TODO: Implement voice listening functionality
+            },
             gradient: _isListening
                 ? [ColorPalette.thirdSuggestionBoxColor, ColorPalette.secondSuggestionBoxColor]
                 : [ColorPalette.mainFontColor, ColorPalette.mainFontColor.withOpacity(0.8)],
             icon: _isListening ? Icons.mic : Icons.mic_none,
           ),
           const SizedBox(width: 8),
-          _buildActionButton(
-            onTap: () => _sendMessage(_textController.text),
+          _buildRoundIconButton(
+            onTap: () {
+              // TODO: Implement send message functionality
+            },
             gradient: [ColorPalette.mainFontColor, ColorPalette.mainFontColor.withOpacity(0.8)],
             icon: Icons.send,
           ),
@@ -788,7 +727,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildActionButton({
+  Widget _buildRoundIconButton({
     required VoidCallback onTap,
     required List<Color> gradient,
     required IconData icon,
