@@ -62,9 +62,10 @@ class _HomeScreenState extends State<HomeScreen>
   /// the platform returns recognized words.
   void _onSpeechResult(SpeechRecognitionResult result) {
     setState(() {
-      _lastWords = result.recognizedWords;
+      var lastWords = result.recognizedWords;
     });
   }
+  
 
   void _initializeAnimations() {
     _pulseController = AnimationController(
@@ -109,6 +110,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
+    speechToText.stop();
     _pulseController.dispose();
     _listeningController.dispose();
     _typingController.dispose();
