@@ -1,20 +1,16 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class OpenaiService {
   static const String _baseUrl = 'https://api.openai.com/v1';
   
-  // API key will be loaded from environment or config file
-  static String? _apiKey;
-  
-  // Initialize API key (call this in your app startup)
-  static void initialize(String apiKey) {
-    _apiKey = apiKey;
-  }
+  // Get API key from environment variables
+  static String? get _apiKey => dotenv.env['API_KEY'];
   
   Future<String> generateResponse(String prompt) async {
     if (_apiKey == null || _apiKey!.isEmpty) {
-      throw Exception('OpenAI API key not configured. Please set your API key.');
+      throw Exception('OpenAI API key not found. Please check your .env file.');
     }
     
     try {

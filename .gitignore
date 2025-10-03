@@ -51,3 +51,7 @@ apikey.dart
 **/apikey.dart
 api_keys.dart
 **/api_keys.dart
+
+# Environment variables (contains API keys)
+.env
+**/.env

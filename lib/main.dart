@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:voice_assistent/color_palete.dart';
 import 'package:voice_assistent/home_screen.dart';
-import 'package:voice_assistent/widgets/openAi_service.dart';
-import 'package:voice_assistent/config/api_config.dart';
 
-void main() {
-  // Initialize OpenAI service with API key
-  OpenaiService.initialize(ApiConfig.openaiApiKey);
+Future<void> main() async {
+  // Ensure Flutter bindings are initialized
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables from .env file
+  await dotenv.load(fileName: ".env");
   
   runApp(const MyApp());
 }
