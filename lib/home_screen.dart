@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistent/color_palete.dart';
+import 'package:voice_assistent/widgets/openAi_service.dart';
 import 'package:voice_assistent/widgets/round_icon_button.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen>
   final List<Map<String, dynamic>> _messages = [];
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final OpenaiService openaiService = OpenaiService();
 
   final speechToText = SpeechToText();
 
@@ -86,10 +88,99 @@ class _HomeScreenState extends State<HomeScreen>
   /// the platform returns recognized words.
   void _onSpeechResult(SpeechRecognitionResult result) {
     setState(() {
-      // Store the recognized words (can be used later for processing)
-      // final lastWords = result.recognizedWords;
-      // TODO: Process the recognized words as needed
+      // Store the recognized words and process them
+      final lastWords = result.recognizedWords;
+      if (lastWords.isNotEmpty) {
+        // Call OpenAI service to check if it's an art prompt
+        _processRecognizedWords(lastWords);
+      }
     });
+  }
+
+  /// Process the recognized words through OpenAI service
+  void _processRecognizedWords(String lastWords) async {
+    try {
+      // Check if the prompt is asking for art/image generation
+      String isArtResponse = await openaiService.isArtPromtApi(lastWords);
+      
+      // Add the user's message to chat
+      setState(() {
+        _messages.add({
+          'text': lastWords,
+          'isUser': true,
+          'timestamp': DateTime.now(),
+        });
+      });
+      
+      // Process based on whether it's an art request or not
+      if (isArtResponse.toLowerCase().contains('yes')) {
+        // It's an art request - call DALL-E
+        _generateImage(lastWords);
+      } else {
+        // It's a regular chat request - call ChatGPT
+        _generateTextResponse(lastWords);
+      }
+    } catch (e) {
+      print('Error processing speech: $e');
+    }
+  }
+
+  /// Generate image using DALL-E API
+  void _generateImage(String prompt) async {
+    try {
+      setState(() {
+        _isTyping = true;
+      });
+      
+      String imageUrl = await openaiService.DallEApi(prompt);
+      
+      setState(() {
+        _isTyping = false;
+        _messages.add({
+          'text': 'I generated an image for you: $imageUrl',
+          'isUser': false,
+          'timestamp': DateTime.now(),
+        });
+      });
+    } catch (e) {
+      setState(() {
+        _isTyping = false;
+        _messages.add({
+          'text': 'Sorry, I couldn\'t generate an image right now. Error: $e',
+          'isUser': false,
+          'timestamp': DateTime.now(),
+        });
+      });
+    }
+  }
+
+  /// Generate text response using ChatGPT API
+  void _generateTextResponse(String prompt) async {
+    try {
+      setState(() {
+        _isTyping = true;
+      });
+      
+      String response = await openaiService.ChatGPTApi(prompt);
+      
+      setState(() {
+        _isTyping = false;
+        _messages.add({
+          'text': response,
+          'isUser': false,
+          'timestamp': DateTime.now(),
+        });
+      });
+    } catch (e) {
+      setState(() {
+        _isTyping = false;
+        _messages.add({
+          'text': 'Sorry, I couldn\'t process your request right now. Error: $e',
+          'isUser': false,
+          'timestamp': DateTime.now(),
+        });
+      });
+    }
   }
   
 
