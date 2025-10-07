@@ -1,8 +1,10 @@
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class OpenaiService {
+  // Get API key from environment variables
+  String get openaiApiKey => dotenv.env['API_KEY'] ?? '';
 
   Future <String> isArtPromtApi(String prompt) async{
     try {
@@ -17,19 +19,77 @@ class OpenaiService {
           "messages": [
             {
               "role": "user", 
-              "content": "Does this message want to generate an AI picture, image, art, or anything similar? $prompt . Simply answer with a yes or no."}
+              "content": "Does this message want to generate an AI picture, image, art, or anything similar? $prompt . Simply answer with a yes or no."
+            }
           ]
-        });
+        }),
+      );
+      print (res.body);
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        return data['choices'][0]['message']['content'];
+      } else {
+        return "Error: ${res.statusCode}";
+      }
     } catch (e) {
       return e.toString();
     }
   }
 
-  Future <String> ChatGPTApi(String prompt) {
-  
+  Future <String> ChatGPTApi(String prompt) async {
+    try {
+      final res = await http.post(
+        Uri.parse("https://api.openai.com/v1/chat/completions"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $openaiApiKey",
+        },
+        body: jsonEncode({
+          "model": "gpt-3.5-turbo",
+          "messages": [
+            {
+              "role": "user", 
+              "content": prompt
+            }
+          ]
+        }),
+      );
+      
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        return data['choices'][0]['message']['content'];
+      } else {
+        return "Error: ${res.statusCode}";
+      }
+    } catch (e) {
+      return e.toString();
+    }
   }
 
-   Future <String> DallEApi(String prompt) {
-  
+   Future <String> DallEApi(String prompt) async {
+    try {
+      final res = await http.post(
+        Uri.parse("https://api.openai.com/v1/images/generations"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $openaiApiKey",
+        },
+        body: jsonEncode({
+          "model": "dall-e-3",
+          "prompt": prompt,
+          "n": 1,
+          "size": "1024x1024"
+        }),
+      );
+      
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        return data['data'][0]['url'];
+      } else {
+        return "Error: ${res.statusCode}";
+      }
+    } catch (e) {
+      return e.toString();
+    }
   }
 }
