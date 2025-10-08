@@ -70,17 +70,46 @@ class _HomeScreenState extends State<HomeScreen>
   /// Toggle listening functionality with conditions
   void _toggleListening() async {
     if (!speechToText.isListening) {
-      // Check if speech-to-text is available before starting
+      // Check if speech-to-text is available and has permission
       if (speechToText.isAvailable) {
-        // Start listening
+        // Start listening if available
         _startListening();
       } else {
         // Request permission/reinitialize if not available
         await initSpeechToText();
+        // Try again after initialization
+        if (speechToText.isAvailable) {
+          _startListening();
+        } else {
+          // Show error message if still not available
+          _showPermissionError();
+        }
       }
     } else {
-      // Stop listening
+      // Stop listening if currently listening
       _stopListening();
+    }
+  }
+
+  /// Show permission error message
+  void _showPermissionError() {
+    setState(() {
+      _messages.add({
+        'text': 'Speech recognition permission is required. Please enable microphone access in your device settings.',
+        'isUser': false,
+        'timestamp': DateTime.now(),
+      });
+    });
+  }
+
+  /// Send text message functionality
+  void _sendTextMessage() {
+    final text = _textController.text.trim();
+    if (text.isNotEmpty) {
+      // Process the text message through OpenAI
+      _processRecognizedWords(text);
+      // Clear the text field
+      _textController.clear();
     }
   }
 
@@ -91,8 +120,13 @@ class _HomeScreenState extends State<HomeScreen>
       // Store the recognized words and process them
       final lastWords = result.recognizedWords;
       if (lastWords.isNotEmpty) {
-        // Call OpenAI service to check if it's an art prompt
-        _processRecognizedWords(lastWords);
+        // Only process final results to avoid multiple API calls
+        if (result.finalResult) {
+          // Stop listening when we have a final result
+          _stopListening();
+          // Call OpenAI service to check if it's an art prompt
+          _processRecognizedWords(lastWords);
+        }
       }
     });
   }
@@ -100,28 +134,43 @@ class _HomeScreenState extends State<HomeScreen>
   /// Process the recognized words through OpenAI service
   void _processRecognizedWords(String lastWords) async {
     try {
-      // Check if the prompt is asking for art/image generation
-      String isArtResponse = await openaiService.isArtPromtApi(lastWords);
+      print('Processing speech input: $lastWords'); // Debug output
       
-      // Add the user's message to chat
+      // Add the user's message to chat first
       setState(() {
         _messages.add({
           'text': lastWords,
           'isUser': true,
           'timestamp': DateTime.now(),
         });
+        _isTyping = true; // Show typing indicator
       });
+      
+      // Check if the prompt is asking for art/image generation
+      print('Calling isArtPromtApi...'); // Debug output
+      String isArtResponse = await openaiService.isArtPromtApi(lastWords);
+      print('isArtPromtApi response: $isArtResponse'); // Debug output
       
       // Process based on whether it's an art request or not
       if (isArtResponse.toLowerCase().contains('yes')) {
+        print('Detected art request - calling DALL-E'); // Debug output
         // It's an art request - call DALL-E
         _generateImage(lastWords);
       } else {
+        print('Detected chat request - calling ChatGPT'); // Debug output
         // It's a regular chat request - call ChatGPT
         _generateTextResponse(lastWords);
       }
     } catch (e) {
       print('Error processing speech: $e');
+      setState(() {
+        _isTyping = false;
+        _messages.add({
+          'text': 'Sorry, I encountered an error processing your request: $e',
+          'isUser': false,
+          'timestamp': DateTime.now(),
+        });
+      });
     }
   }
 
@@ -806,7 +855,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
                 onSubmitted: (value) {
-                  // TODO: Implement message submission functionality
+                  _sendTextMessage();
                 },
               ),
             ),
@@ -821,9 +870,7 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           const SizedBox(width: 8),
           RoundIconButton(
-            onTap: () {
-              // TODO: Implement send message functionality
-            },
+            onTap: _sendTextMessage,
             gradient: [ColorPalette.mainFontColor, ColorPalette.mainFontColor.withOpacity(0.8)],
             icon: Icons.send,
           ),
