@@ -26,8 +26,12 @@ class OpenaiService {
       );
       print (res.body);
       if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        return data['choices'][0]['message']['content'];
+        String content = jsonDecode(res.body)['choices'][0]['message']['content'];
+        content.trim();
+        if (content.toLowerCase().contains("yes")) {
+          return "yes";
+        }
+        
       } else {
         return "Error: ${res.statusCode}";
       }
