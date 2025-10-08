@@ -168,6 +168,11 @@ class _HomeScreenState extends State<HomeScreen>
         });
       });
       
+      // Speak the AI response automatically
+      if (response['success'] == true && response['content'] != null) {
+        systemSpeak(response['content']);
+      }
+      
       // Auto-scroll to the latest message
       _scrollToBottom();
       
@@ -236,11 +241,15 @@ class _HomeScreenState extends State<HomeScreen>
     ));
   }
 
+  Future<void> systemSpeak(String content) async {
+    await flutterTts.speak(content);
+  }
+
   @override
   void dispose() {
     speechToText.stop();
     _pulseController.dispose();
-    _listeningController.dispose();
+    _listeningController.dispose(); 
     _typingController.dispose();
     _textController.dispose();
     _scrollController.dispose();
@@ -519,43 +528,51 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
                 child: Material(
                   color: Colors.transparent,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: ColorPalette.whiteColor.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      // Speak the action title and process the message
+                      systemSpeak(action['title'] as String);
+                      _processRecognizedWords(action['message'] as String);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: ColorPalette.whiteColor.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              action['icon'] as IconData,
+                              color: ColorPalette.mainFontColor,
+                              size: 28,
+                            ),
                           ),
-                          child: Icon(
-                            action['icon'] as IconData,
-                            color: ColorPalette.mainFontColor,
-                            size: 28,
+                          const SizedBox(height: 12),
+                          Text(
+                            action['title'] as String,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: _isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          action['title'] as String,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: _isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor,
+                          const SizedBox(height: 4),
+                          Text(
+                            action['subtitle'] as String,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor).withOpacity(0.7),
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          action['subtitle'] as String,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor).withOpacity(0.7),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -702,12 +719,27 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor).withOpacity(0.5),
-                  ),
+                Row(
+                  mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (!isUser)
+                      IconButton(
+                        onPressed: () => systemSpeak(message),
+                        icon: Icon(
+                          Icons.volume_up,
+                          size: 16,
+                          color: (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor).withOpacity(0.7),
+                        ),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    Text(
+                      '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor).withOpacity(0.5),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -808,7 +840,9 @@ class _HomeScreenState extends State<HomeScreen>
               child: InkWell(
                 borderRadius: BorderRadius.circular(25),
                 onTap: () {
-                  // TODO: Implement quick reply functionality
+                  // Speak the quick reply and process it
+                  systemSpeak(quickReplies[index]);
+                  _processRecognizedWords(quickReplies[index]);
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
