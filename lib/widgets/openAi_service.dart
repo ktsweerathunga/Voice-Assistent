@@ -25,7 +25,7 @@ class OpenaiService {
         }),
       );
       print (res.body);
-      
+
       if (res.statusCode == 200) {
         String content = jsonDecode(res.body)['choices'][0]['message']['content'];
         content.trim();
@@ -60,15 +60,26 @@ class OpenaiService {
           "messages": [
             {
               "role": "user", 
-              "content": prompt
+              "content": "Does this message want to generate an AI picture, image, art, or anything similar? $prompt . Simply answer with a yes or no."
             }
           ]
         }),
       );
+      print (res.body);
       
       if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        return data['choices'][0]['message']['content'];
+        String content = jsonDecode(res.body)['choices'][0]['message']['content'];
+        content.trim();
+        if (content.toLowerCase().contains("yes")) {
+          final res = await DallEApi(prompt);
+          return res;
+        }else if (content.toLowerCase().contains("no")) {
+          final res = await ChatGPTApi(prompt);
+          return res;
+        } else {
+          return "Error: Unexpected response content";
+        }
+        
       } else {
         return "Error: ${res.statusCode}";
       }
@@ -80,22 +91,36 @@ class OpenaiService {
    Future <String> DallEApi(String prompt) async {
     try {
       final res = await http.post(
-        Uri.parse("https://api.openai.com/v1/images/generations"),
+        Uri.parse("https://api.openai.com/v1/chat/completions"),
         headers: {
           "Content-Type": "application/json",
           "Authorization": "Bearer $openaiApiKey",
         },
         body: jsonEncode({
-          "model": "dall-e-3",
-          "prompt": prompt,
-          "n": 1,
-          "size": "1024x1024"
+          "model": "gpt-3.5-turbo",
+          "messages": [
+            {
+              "role": "user", 
+              "content": "Does this message want to generate an AI picture, image, art, or anything similar? $prompt . Simply answer with a yes or no."
+            }
+          ]
         }),
       );
+      print (res.body);
       
       if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        return data['data'][0]['url'];
+        String content = jsonDecode(res.body)['choices'][0]['message']['content'];
+        content.trim();
+        if (content.toLowerCase().contains("yes")) {
+          final res = await DallEApi(prompt);
+          return res;
+        }else if (content.toLowerCase().contains("no")) {
+          final res = await ChatGPTApi(prompt);
+          return res;
+        } else {
+          return "Error: Unexpected response content";
+        }
+        
       } else {
         return "Error: ${res.statusCode}";
       }
