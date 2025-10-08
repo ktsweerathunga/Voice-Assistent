@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistent/color_palete.dart';
@@ -30,12 +31,23 @@ class _HomeScreenState extends State<HomeScreen>
   final AiAssistantService _aiAssistantService = AiAssistantService();
 
   final speechToText = SpeechToText();
+  FlutterTts flutterTts = FlutterTts();
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     initSpeechToText();
+    initTextToSpeech();
+  }
+
+  Future <void> initTextToSpeech() async {
+    // Initialize text-to-speech functionality here if needed
+    flutterTts.setLanguage("en-US");
+    flutterTts.setSpeechRate(0.5);
+    flutterTts.setVolume(1.0);
+    flutterTts.setPitch(1.0);
+    return Future.value();
   }
 
   Future<void> initSpeechToText() async {
