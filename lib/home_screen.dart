@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistent/color_palete.dart';
-import 'package:voice_assistent/widgets/openAi_service.dart';
+import 'package:voice_assistent/services/ai_assistant_service.dart';
 import 'package:voice_assistent/widgets/round_icon_button.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen>
   final List<Map<String, dynamic>> _messages = [];
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final OpenaiService openaiService = OpenaiService();
+  final AiAssistantService _aiAssistantService = AiAssistantService();
 
   final speechToText = SpeechToText();
 
@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen>
   void _sendTextMessage() {
     final text = _textController.text.trim();
     if (text.isNotEmpty) {
-      // Process the text message through OpenAI
+      // Process the text message through AI Assistant Service
       _processRecognizedWords(text);
       // Clear the text field
       _textController.clear();
@@ -124,18 +124,16 @@ class _HomeScreenState extends State<HomeScreen>
         if (result.finalResult) {
           // Stop listening when we have a final result
           _stopListening();
-          // Call OpenAI service to check if it's an art prompt
+          // Call AI Assistant Service to process the words
           _processRecognizedWords(lastWords);
         }
       }
     });
   }
 
-  /// Process the recognized words through OpenAI service
+  /// Process the recognized words through AI Assistant Service
   void _processRecognizedWords(String lastWords) async {
     try {
-      print('Processing speech input: $lastWords'); // Debug output
-      
       // Add the user's message to chat first
       setState(() {
         _messages.add({
@@ -146,21 +144,23 @@ class _HomeScreenState extends State<HomeScreen>
         _isTyping = true; // Show typing indicator
       });
       
-      // Check if the prompt is asking for art/image generation
-      print('Calling isArtPromtApi...'); // Debug output
-      String isArtResponse = await openaiService.isArtPromtApi(lastWords);
-      print('isArtPromtApi response: $isArtResponse'); // Debug output
+      // Process through AI Assistant Service
+      Map<String, dynamic> response = await _aiAssistantService.processRecognizedWords(lastWords);
       
-      // Process based on whether it's an art request or not
-      if (isArtResponse.toLowerCase().contains('yes')) {
-        print('Detected art request - calling DALL-E'); // Debug output
-        // It's an art request - call DALL-E
-        _generateImage(lastWords);
-      } else {
-        print('Detected chat request - calling ChatGPT'); // Debug output
-        // It's a regular chat request - call ChatGPT
-        _generateTextResponse(lastWords);
-      }
+      setState(() {
+        _isTyping = false;
+        _messages.add({
+          'text': response['content'],
+          'isUser': false,
+          'timestamp': DateTime.now(),
+          'imageUrl': response['imageUrl'], // For image responses
+          'type': response['type'], // 'text', 'image', or 'error'
+        });
+      });
+      
+      // Auto-scroll to the latest message
+      _scrollToBottom();
+      
     } catch (e) {
       print('Error processing speech: $e');
       setState(() {
@@ -174,64 +174,16 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  /// Generate image using DALL-E API
-  void _generateImage(String prompt) async {
-    try {
-      setState(() {
-        _isTyping = true;
-      });
-      
-      String imageUrl = await openaiService.DallEApi(prompt);
-      
-      setState(() {
-        _isTyping = false;
-        _messages.add({
-          'text': 'I generated an image for you: $imageUrl',
-          'isUser': false,
-          'timestamp': DateTime.now(),
-        });
-      });
-    } catch (e) {
-      setState(() {
-        _isTyping = false;
-        _messages.add({
-          'text': 'Sorry, I couldn\'t generate an image right now. Error: $e',
-          'isUser': false,
-          'timestamp': DateTime.now(),
-        });
-      });
+  /// Auto-scroll to the bottom of the chat
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
   }
-
-  /// Generate text response using ChatGPT API
-  void _generateTextResponse(String prompt) async {
-    try {
-      setState(() {
-        _isTyping = true;
-      });
-      
-      String response = await openaiService.ChatGPTApi(prompt);
-      
-      setState(() {
-        _isTyping = false;
-        _messages.add({
-          'text': response,
-          'isUser': false,
-          'timestamp': DateTime.now(),
-        });
-      });
-    } catch (e) {
-      setState(() {
-        _isTyping = false;
-        _messages.add({
-          'text': 'Sorry, I couldn\'t process your request right now. Error: $e',
-          'isUser': false,
-          'timestamp': DateTime.now(),
-        });
-      });
-    }
-  }
-  
 
   void _initializeAnimations() {
     _pulseController = AnimationController(
@@ -621,6 +573,8 @@ class _HomeScreenState extends State<HomeScreen>
                 message['text'],
                 message['isUser'],
                 message['timestamp'],
+                imageUrl: message['imageUrl'],
+                messageType: message['type'],
               );
             },
           ),
@@ -630,7 +584,13 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildChatMessageBubble(String message, bool isUser, DateTime timestamp) {
+  Widget _buildChatMessageBubble(
+    String message, 
+    bool isUser, 
+    DateTime timestamp, {
+    String? imageUrl,
+    String? messageType,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -669,14 +629,65 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                     ],
                   ),
-                  child: Text(
-                    message,
-                    style: TextStyle(
-                      color: isUser
-                          ? ColorPalette.whiteColor
-                          : (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor),
-                      fontSize: 16,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (messageType == 'image' && imageUrl != null && imageUrl.isNotEmpty)
+                        Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                imageUrl,
+                                width: 200,
+                                height: 200,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    width: 200,
+                                    height: 200,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[300],
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 200,
+                                    height: 200,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[300],
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.error,
+                                        color: Colors.red,
+                                        size: 40,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                        ),
+                      Text(
+                        message,
+                        style: TextStyle(
+                          color: isUser
+                              ? ColorPalette.whiteColor
+                              : (_isDarkMode ? ColorPalette.whiteColor : ColorPalette.mainFontColor),
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 4),
