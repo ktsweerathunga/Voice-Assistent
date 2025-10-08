@@ -25,11 +25,18 @@ class OpenaiService {
         }),
       );
       print (res.body);
+      
       if (res.statusCode == 200) {
         String content = jsonDecode(res.body)['choices'][0]['message']['content'];
         content.trim();
         if (content.toLowerCase().contains("yes")) {
-          return "yes";
+          final res = await DallEApi(prompt);
+          return res;
+        }else if (content.toLowerCase().contains("no")) {
+          final res = await ChatGPTApi(prompt);
+          return res;
+        } else {
+          return "Error: Unexpected response content";
         }
         
       } else {
