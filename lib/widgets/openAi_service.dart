@@ -6,6 +6,9 @@ class OpenaiService {
   // Get API key from environment variables
   String get openaiApiKey => dotenv.env['API_KEY'] ?? '';
 
+  /// Store chat messages
+  final List<Map<String, dynamic>> messages = [];
+
   Future <String> isArtPromtApi(String prompt) async{
     try {
       final res = await http.post(
