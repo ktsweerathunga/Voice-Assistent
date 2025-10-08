@@ -42,12 +42,10 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future <void> initTextToSpeech() async {
-    // Initialize text-to-speech functionality here if needed
-    flutterTts.setLanguage("en-US");
-    flutterTts.setSpeechRate(0.5);
-    flutterTts.setVolume(1.0);
-    flutterTts.setPitch(1.0);
-    return Future.value();
+
+    await flutterTts.setSharedInstance(true);
+    setState(() {
+    });
   }
 
   Future<void> initSpeechToText() async {
@@ -247,6 +245,7 @@ class _HomeScreenState extends State<HomeScreen>
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
+    flutterTts.stop();
   }
 
   // TODO: Add functionality methods here when implementing features
