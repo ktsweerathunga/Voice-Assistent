@@ -51,6 +51,12 @@ class OpenaiService {
   }
 
   Future <String> ChatGPTApi(String prompt) async {
+
+    messages.add({
+      "role": "user",
+      "content": prompt,
+    });
+
     try {
       final res = await http.post(
         Uri.parse("https://api.openai.com/v1/chat/completions"),
@@ -60,12 +66,7 @@ class OpenaiService {
         },
         body: jsonEncode({
           "model": "gpt-3.5-turbo",
-          "messages": [
-            {
-              "role": "user", 
-              "content": "Does this message want to generate an AI picture, image, art, or anything similar? $prompt . Simply answer with a yes or no."
-            }
-          ]
+          "messages": messages
         }),
       );
       print (res.body);
