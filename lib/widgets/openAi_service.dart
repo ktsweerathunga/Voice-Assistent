@@ -78,6 +78,7 @@ class OpenaiService {
           "role": "assistant",
           "content": content,
         });
+        
         return content;
         
       } else {
