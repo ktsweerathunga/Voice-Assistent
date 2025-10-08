@@ -69,20 +69,16 @@ class OpenaiService {
           "messages": messages
         }),
       );
-      print (res.body);
-      
+
       if (res.statusCode == 200) {
         String content = jsonDecode(res.body)['choices'][0]['message']['content'];
-        content.trim();
-        if (content.toLowerCase().contains("yes")) {
-          final res = await DallEApi(prompt);
-          return res;
-        }else if (content.toLowerCase().contains("no")) {
-          final res = await ChatGPTApi(prompt);
-          return res;
-        } else {
-          return "Error: Unexpected response content";
-        }
+        content = content.trim();
+        
+        messages.add({
+          "role": "assistant",
+          "content": content,
+        });
+        return content;
         
       } else {
         return "Error: ${res.statusCode}";
