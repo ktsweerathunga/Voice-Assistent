@@ -1,4 +1,4 @@
-import 'package:voice_assistent/widgets/openAi_service.dart';
+import 'package:voice_assistent/services/openai_service.dart';
 
 class AiAssistantService {
   final OpenaiService _openaiService = OpenaiService();
